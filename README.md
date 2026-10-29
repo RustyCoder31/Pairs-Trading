@@ -59,12 +59,17 @@ I checked the numbers in this section with separate replay scripts that are not 
    - Run a structural break test (for example CUSUM) on the fixed-hedge residual.
 
    The goal is to find out the band is gone after a small loss, not after the spread has run for months.
+7. **The hedge ratio is locked on the entry day.** `strategy.py` keeps the beta from the day the trade opened (`entry_beta`) until it closes, while the Kalman filter keeps updating it. On a trade that stays open for weeks, my shares of X drift away from the current hedge. I locked it on purpose, because rebalancing every day costs money. I have not measured which way is better, so I cannot say the choice is right.
+8. **The 0.95 correlation filter decides which pairs get tested at all.** Correlation and cointegration are different things, so the filter can throw out pairs that would have passed. I used it because testing everything is a lot of tests: 503 stocks make about 126,000 pairs, and at a 5% cutoff about 6,300 would pass by luck. So dropping the filter needs a fix for multiple testing first (for example a Benjamini-Hochberg correction). I do not know yet whether the filter hides good pairs or only saves me from noise.
 
 ## What I want to do next
 
-- Fill at the next day's close and see how much of the result is left.
+- Fill after the signal, at the open or the close of the next day, and see how much of the result is left.
 - Add costs.
-- Build the checks from problem 7: a rolling cointegration test, a half-life check and hard stops, then see how much they would have saved on a pair that broke.
+- Compare the locked hedge ratio with rebalancing to the current Kalman beta, with costs on, and see which one holds up.
+- Drop the correlation filter and test every pair, with a multiple-testing correction (or the Johansen test), then compare that list with the filtered one.
+- Build the checks from problem 6: a rolling cointegration test, a half-life check and hard stops, then see how much they would have saved on a pair that broke.
+- Write a script that tests every pair from the screen and comes back with the strongest ones. A strong pair is not the one with the lowest p-value. It is the one that keeps passing on data it was not picked on: split the history into several windows, test each window on its own, and rank the pairs by how many windows they pass. The top of that list is where the strategy runs, with the fixed hedge check first.
 - Run the same pipeline on more cointegrated pairs from the screen, checking each on a fixed hedge first.
 - Write the problem log up properly, with the replay scripts in the repo.
 

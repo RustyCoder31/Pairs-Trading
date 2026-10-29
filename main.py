@@ -25,18 +25,18 @@ def regime_test(hmm):
 
     return calm
 
-correlated_pairs, pairs_data = find_pairs("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
+# correlated_pairs, pairs_data = find_pairs("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
 
-cointegrated_pairs = cointegrated_pairs_check(correlated_pairs, pairs_data)
+# cointegrated_pairs = cointegrated_pairs_check(correlated_pairs, pairs_data)
 
-cointegrated_pairs.to_csv("cointegrated_pairs.csv", index=False)
+# cointegrated_pairs.to_csv("cointegrated_pairs.csv", index=False)
 
-print(cointegrated_pairs)
+df = pd.read_csv('cointegrated_pairs.csv')
 
+asset_1 = df.at[4,'Stock 1']
+asset_2 = df.at[4,'Stock 2']
 
-
-
-x, y = download_data("JPM", "BAC", "2022-01-01")
+x, y = download_data(asset_1, asset_2, "2022-01-01")
 x_train, x_test, y_train, y_test = split_data(x, y, 0.7)
 
 split = 0
@@ -61,7 +61,7 @@ pnl_df = strategy_test(x_train, y_train, hmm, calm_train)
 
 
 # %% Plot: prices of the pair and the Kalman hedge ratio
-plot_prices(x_train, x_test, y_train, y_test, "JPM", "BAC")
+plot_prices(x_train, x_test, y_train, y_test, asset_1, asset_2)
 
 # %% Plot: Kalman spread with 2 sigma bands, and the rolling z-score (train)
 plot_spread_bands(kalman_data, regime_data)
@@ -73,13 +73,13 @@ plot_regime_timeline(regime_data, calm_train)
 plot_hmm_states(regime_data, hmm, calm_train)
 
 # %% Plot: in-sample trades (needs pnl_df from the strategy cell above)
-plot_trades_in_sample(regime_data, pnl_df, calm_train, "BAC")
+plot_trades_in_sample(regime_data, pnl_df, calm_train, asset_2)
 
 # %% Out-of-sample replay (slow, about a minute)
 oos_days, oos_trades = replay_out_of_sample(x_train, x_test, y_train, y_test, hmm, calm_train)
 
 # %% Plot: out-of-sample trades
-plot_trades_out_of_sample(oos_days, oos_trades, calm_train, "BAC")
+plot_trades_out_of_sample(oos_days, oos_trades, calm_train, asset_2)
 
 # %% Plot: Kalman spread vs a fixed train hedge on the test window
 plot_fixed_vs_kalman(x_train, x_test, y_train, y_test)
