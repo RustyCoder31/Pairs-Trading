@@ -1,0 +1,33 @@
+import yfinance as yf
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", message=".*inplace.*")
+
+def download_data(asset_1, asset_2, start_date):
+
+    pair_x = yf.download(asset_1, start = start_date)["Close"].dropna()
+    pair_y = yf.download(asset_2, start = start_date)["Close"].dropna()
+
+    return pair_x, pair_y
+
+def split_data(asset_1, asset_2, split_percent):
+
+    split_index = int(len(asset_1)*split_percent)
+
+    train_x = asset_1.iloc[:split_index].squeeze()
+    test_x = asset_1.iloc[split_index:].squeeze()
+
+    train_y= asset_2.iloc[:split_index].squeeze()
+    test_y = asset_2.iloc[split_index:].squeeze()
+
+    return train_x, test_x, train_y, test_y
+
+
+
+
+
+
+
+
+if __name__ == "__main__":
+    download_data()
