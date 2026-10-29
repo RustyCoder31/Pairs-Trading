@@ -46,16 +46,25 @@ I checked the numbers in this section with separate replay scripts that are not 
 ## Problems I found (and what I did)
 
 1. **The HMM collapsed onto one day.** On SPY and IVV, one day (2025-04-09) sat 21 standard deviations out. The HMM spent a whole state on it and the calm filter did nothing. Clipping the spread at 3 standard deviations before fitting fixed it (variances 0.0061 and 0.067, then 3 trades, all wins). The clip bound uses a standard deviation that still includes the outlier, so it is a patch, not a clean fix.
-2. **The calm state number is not stable.** Which state the HMM calls 0 flips with the random seed (4 of 8 seeds). With the clip, state 0 is the high variance state for V/MA and V/AAPL, so a rule that says `regime == 0` would trade the volatile days. I now pick calm by reading the variances by hand. That works, but it is manual.
-3. **Fills are at the same close that made the signal.** That flatters results. Next-day fills are the fair test and I have not built that yet.
-4. **Too few trades to say anything.** With 2 to 11 trades per pair, P&L is noise. V/AAPL goes from -121 bps to +51 bps depending only on which state I trade.
-5. **No costs.** No commissions, no borrow cost for the short leg, no slippage.
-6. **Old code in `main.py`.** The commented strategy cells call `split_data` with an older set of arguments, so they need fixing before they run.
+2. **Fills are at the same close that made the signal.** That flatters results. Next-day fills are the fair test and I have not built that yet.
+3. **Too few trades to say anything.** With 2 to 11 trades per pair, P&L is noise. V/AAPL goes from -121 bps to +51 bps depending only on which state I trade.
+4. **No costs.** No commissions, no borrow cost for the short leg, no slippage.
+5. **Old code in `main.py` (fixed).** The commented strategy cells called `split_data` with an older set of arguments. They now download with `download_data` first and then call `split_data(x, y, 0.7)`. One thing left: the split uses the length of the first stock for both, so if two stocks ever have different numbers of days, the dates would not line up.
+6. **Cointegration can be real for a while and then stop.** The screen and the train/test check only look at one window. A pair can be cointegrated for two years, then break (a merger, a business change, one company moving to a different stage) and the spread just keeps running away. The Kalman hedge ratio hides this, because it keeps re-fitting and the spread looks fine (problem seen on V/MA). Ideas I have to catch it, none built yet:
+   - Re-run the cointegration test on a rolling window (for example the last 252 days) and stop trading the pair when the p-value goes above a limit.
+   - Track the half-life of the spread. If it gets much longer than it was in training, the band is loosening.
+   - Watch the Kalman hedge ratio and its error. A hedge ratio that keeps drifting in one direction is a warning.
+   - A hard stop: close the trade if the z-score goes past 4, and close it if it has been open longer than about 3 times the half-life.
+   - Size small until a pair has kept passing the test out of sample, and cap the loss on any one pair.
+   - Run a structural break test (for example CUSUM) on the fixed-hedge residual.
+
+   The goal is to find out the band is gone after a small loss, not after the spread has run for months.
 
 ## What I want to do next
 
 - Fill at the next day's close and see how much of the result is left.
 - Add costs.
+- Build the checks from problem 7: a rolling cointegration test, a half-life check and hard stops, then see how much they would have saved on a pair that broke.
 - Run the same pipeline on more cointegrated pairs from the screen, checking each on a fixed hedge first.
 - Write the problem log up properly, with the replay scripts in the repo.
 
