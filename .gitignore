@@ -1,3 +1,4 @@
 pairs_trading/
 __pycache__/
 *.pyc
+correlated_prices.csv

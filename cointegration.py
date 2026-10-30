@@ -1,6 +1,6 @@
 from statsmodels.tsa.stattools import coint
-from config import download_data
 import pandas as pd
+from statsmodels.stats.multitest import multipletests
 
 
 def cointegration_check(asset_x, asset_y):
@@ -47,14 +47,22 @@ def cointegrated_pairs_check(correlated_pairs, pairs_data):
         y_aligned = y.loc[common_dates]
         
 
-        p_val = cointegration_check(x_aligned, y_aligned)
+        p_val_1 = cointegration_check(x_aligned, y_aligned)
+        p_val_2 = cointegration_check(y_aligned, x_aligned)
 
-        if p_val < 0.05:
-            results.append({
-                "Stock 1": stock_1,
-                "Stock 2": stock_2,
-                "P value": p_val
-            })
-            
+        # if p_val_1 < 0.05 and p_val_2 < 0.05:
+        results.append({
+            "Stock 1": stock_1,
+            "Stock 2": stock_2,
+            "P value": max(p_val_1,p_val_2)
+        })
+
+    results.sort(key=lambda x: x["P value"])
+
     cointegration_df = pd.DataFrame(results)
+
+    keep = multipletests(cointegration_df["P value"], alpha=0.05, method="fdr_bh")[0]
+    cointegration_df["BH pass"] = keep
+            
+    
     return cointegration_df

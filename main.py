@@ -25,64 +25,72 @@ def regime_test(hmm):
 
     return calm
 
-# correlated_pairs, pairs_data = find_pairs("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
+correlated_pairs, pairs_data = find_pairs("https://en.wikipedia.org/wiki/List_of_Russell_1000_companies")
 
-# cointegrated_pairs = cointegrated_pairs_check(correlated_pairs, pairs_data)
+cointegrated_pairs = cointegrated_pairs_check(correlated_pairs, pairs_data)
 
-# cointegrated_pairs.to_csv("cointegrated_pairs.csv", index=False)
-
-df = pd.read_csv('cointegrated_pairs.csv')
-
-asset_1 = df.at[4,'Stock 1']
-asset_2 = df.at[4,'Stock 2']
-
-x, y = download_data(asset_1, asset_2, "2022-01-01")
-x_train, x_test, y_train, y_test = split_data(x, y, 0.7)
-
-split = 0
-p_val = cointegration_check(x_train, y_train)
+cointegrated_pairs.to_csv("cointegrated_pairs.csv", index=False)
 
 
-kalman_data = calculate_kalman_spread(x_train, y_train)
+survivors = cointegrated_pairs[cointegrated_pairs["BH pass"]]
+survivors.to_csv("cointegrated_pairs_BH.csv", index=False)
+print("Pairs tested:", len(cointegrated_pairs), "Survivors:", len(survivors))
 
-regime_data, hmm = hmm_regimes(kalman_data, split, 0)
-
-print(regime_data.head(10))
-
-print("\n--- HMMLEARN BUILT-IN RESULTS ---")
-print("Transition Matrix:\n", hmm.transmat_)
-print("Means:\n", hmm.means_.flatten())
-print("Variances:\n", hmm.covars_.flatten())
-
-calm_train = regime_test(hmm)
-
-# %% Strategy (in-sample, slow)
-pnl_df = strategy_test(x_train, y_train, hmm, calm_train)
+plt.hist(cointegrated_pairs["P value"], bins=20)
+plt.xlabel("p-value"); plt.ylabel("number of pairs")
+plt.savefig("Images/pvalue_hist.png")
 
 
-# %% Plot: prices of the pair and the Kalman hedge ratio
-plot_prices(x_train, x_test, y_train, y_test, asset_1, asset_2)
+# asset_1 = 'LEN'
+# asset_2 = 'NVR'
 
-# %% Plot: Kalman spread with 2 sigma bands, and the rolling z-score (train)
-plot_spread_bands(kalman_data, regime_data)
+# x, y = download_data(asset_1, asset_2, "2020-01-01", "2026-10-10")
+# x_train, x_test, y_train, y_test = split_data(x, y, 0.7)
 
-# %% Plot: HMM regime timeline (train)
-plot_regime_timeline(regime_data, calm_train)
+# split = 0
+# p_val = cointegration_check(x_train, y_train)
 
-# %% Plot: |spread| by HMM state (train)
-plot_hmm_states(regime_data, hmm, calm_train)
 
-# %% Plot: in-sample trades (needs pnl_df from the strategy cell above)
-plot_trades_in_sample(regime_data, pnl_df, calm_train, asset_2)
+# kalman_data = calculate_kalman_spread(x_train, y_train)
 
-# %% Out-of-sample replay (slow, about a minute)
-oos_days, oos_trades = replay_out_of_sample(x_train, x_test, y_train, y_test, hmm, calm_train)
+# regime_data, hmm = hmm_regimes(kalman_data, split, 0)
 
-# %% Plot: out-of-sample trades
-plot_trades_out_of_sample(oos_days, oos_trades, calm_train, asset_2)
+# print(regime_data.head(10))
 
-# %% Plot: Kalman spread vs a fixed train hedge on the test window
-plot_fixed_vs_kalman(x_train, x_test, y_train, y_test)
+# print("\n--- HMMLEARN BUILT-IN RESULTS ---")
+# print("Transition Matrix:\n", hmm.transmat_)
+# print("Means:\n", hmm.means_.flatten())
+# print("Variances:\n", hmm.covars_.flatten())
+
+# calm_train = regime_test(hmm)
+
+# # %% Strategy (in-sample, slow)
+# pnl_df = strategy_test(x_train, y_train, hmm, calm_train)
+
+
+# # %% Plot: prices of the pair and the Kalman hedge ratio
+# plot_prices(x_train, x_test, y_train, y_test, asset_1, asset_2)
+
+# # %% Plot: Kalman spread with 2 sigma bands, and the rolling z-score (train)
+# plot_spread_bands(kalman_data, regime_data)
+
+# # %% Plot: HMM regime timeline (train)
+# plot_regime_timeline(regime_data, calm_train)
+
+# # %% Plot: |spread| by HMM state (train)
+# plot_hmm_states(regime_data, hmm, calm_train)
+
+# # %% Plot: in-sample trades (needs pnl_df from the strategy cell above)
+# plot_trades_in_sample(regime_data, pnl_df, calm_train, asset_2)
+
+# # %% Out-of-sample replay (slow, about a minute)
+# oos_days, oos_trades = replay_out_of_sample(x_train, x_test, y_train, y_test, hmm, calm_train)
+
+# # %% Plot: out-of-sample trades
+# plot_trades_out_of_sample(oos_days, oos_trades, calm_train, asset_2)
+
+# # %% Plot: Kalman spread vs a fixed train hedge on the test window
+# plot_fixed_vs_kalman(x_train, x_test, y_train, y_test)
 
 
 
